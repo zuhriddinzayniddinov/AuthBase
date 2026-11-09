@@ -273,6 +273,20 @@ public class FixesAndFeaturesTests
             SavedPermissions.AddRange(permissions);
             return Task.FromResult(permissions.Count);
         }
+
+        public Task<Dictionary<long, List<int>>> GetStructurePermissionsForServiceAsync(
+            string? serviceName,
+            int? serviceCode,
+            IReadOnlyList<int>? permissionCodes,
+            CancellationToken cancellationToken = default)
+        {
+            var dict = new Dictionary<long, List<int>>
+            {
+                [1] = [88100001],
+                [2] = [88100001, 88100002]
+            };
+            return Task.FromResult(dict);
+        }
     }
 
     [Fact]
@@ -293,6 +307,28 @@ public class FixesAndFeaturesTests
         Assert.Equal(2, storage.SavedPermissions.Count);
         Assert.Contains(storage.SavedPermissions, p => p.Code == 88100001 && p.Name == "CreateSample");
         Assert.Contains(storage.SavedPermissions, p => p.Code == 88100002 && p.Name == "DeleteSample");
+    }
+
+    [Fact]
+    public async Task PermissionSyncSender_FetchAndLoadStructurePermissionsAsync_DirectMode_PopulatesStaticCache()
+    {
+        Core.Domain.Permissions.CoreStaticCache.Permissions.Clear();
+
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var storage = new TestPermissionStorageHandler();
+        services.AddScoped<Core.Infrastructure.Permissions.IPermissionStorageHandler>(_ => storage);
+        services.AddLogging();
+        var sp = services.BuildServiceProvider();
+
+        var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Core.Infrastructure.Permissions.Services.PermissionSyncSender>>();
+        var sender = new Core.Infrastructure.Permissions.Services.PermissionSyncSender([typeof(SampleCustomPermissions)], sp, logger);
+
+        await sender.FetchAndLoadStructurePermissionsAsync();
+
+        Assert.True(Core.Domain.Permissions.CoreStaticCache.Permissions.ContainsKey(1));
+        Assert.Equal([88100001], Core.Domain.Permissions.CoreStaticCache.Permissions[1]);
+        Assert.True(Core.Web.Constants.StaticCache.Permissions.ContainsKey(2));
+        Assert.Equal([88100001, 88100002], Core.Web.Constants.StaticCache.Permissions[2]);
     }
 
     [Fact]

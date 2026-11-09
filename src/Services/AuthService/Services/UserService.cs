@@ -23,6 +23,8 @@ public class UserService(
             .GetAllAsQueryable()
             .FilterByExpressions(metaQueryModel);
 
+        var total = await query.CountAsync();
+
         var items = await query
             .Sort(metaQueryModel)
             .Paging(metaQueryModel)
@@ -34,9 +36,23 @@ public class UserService(
                 u.Structures.Select(s => s.StructureId).ToList()))
             .ToListAsync();
 
-        return ResponseModel<List<UserDto>>.ResultFromContent(
-            items.Select(u => u with { AvatarUrl = minioService.GetPresignedUrlAsync(u.AvatarUrl).Result }).ToList(),
-            total: await query.CountAsync());
+        var mapped = await Task.WhenAll(items.Select(async u =>
+        {
+            if (string.IsNullOrWhiteSpace(u.AvatarUrl))
+                return u;
+
+            try
+            {
+                var presigned = await minioService.GetPresignedUrlAsync(u.AvatarUrl);
+                return u with { AvatarUrl = presigned };
+            }
+            catch
+            {
+                return u;
+            }
+        }));
+
+        return ResponseModel<List<UserDto>>.ResultFromContent(mapped.ToList(), total: total);
     }
 
     public async Task<ResponseModel<UserFullDto>> GetUserByIdAsync(long userId)
@@ -44,11 +60,15 @@ public class UserService(
         var user = await userRepository.GetByIdAsync(userId)
             ?? throw new NotFoundException("Not found user");
 
+        var avatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
+            ? user.AvatarUrl
+            : await minioService.GetPresignedUrlAsync(user.AvatarUrl);
+
         return ResponseModel<UserFullDto>.ResultFromContent(
             new UserFullDto(
                 user.Id,
                 user.FullName,
-                await minioService.GetPresignedUrlAsync(user.AvatarUrl),
+                avatarUrl,
                 user.Structures.Select(s => s.StructureId).ToList(),
                 user.Structures.Select(s => s.Structure.Name).ToList()));
     }

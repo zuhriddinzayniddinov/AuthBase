@@ -1,5 +1,6 @@
 using Core.Domain.Exceptions;
 using Core.Domain.Models.Api;
+using Core.Domain.Permissions;
 using Core.Infrastructure.Data.Extensions;
 using DatabaseBroker.Repositories.Auth;
 using Entity.DataTransferObjects.Role;
@@ -26,6 +27,13 @@ public class RoleService(
         };
 
         var structureModel = await structureRepository.AddAsync(newStructure);
+
+        var permCodes = await permissionsRepository.GetAllAsQueryable()
+            .Where(p => structureForCreationDto.PermissionIds.Contains(p.Id))
+            .Select(p => p.Code)
+            .ToListAsync();
+
+        CoreStaticCache.Permissions[structureModel.Id] = permCodes;
 
         return new StructureDto(
             structureModel.Id,
@@ -65,6 +73,13 @@ public class RoleService(
 
         var changedStructure = await structureRepository.UpdateAsync(newStructure);
 
+        var activePermCodes = await permissionsRepository.GetAllAsQueryable()
+            .Where(p => structure.PermissionIds.Contains(p.Id))
+            .Select(p => p.Code)
+            .ToListAsync();
+
+        CoreStaticCache.Permissions[changedStructure.Id] = activePermCodes;
+
         return new StructureDto(
             changedStructure.Id,
             changedStructure.Name);
@@ -76,6 +91,8 @@ public class RoleService(
         {
             Id = structureId
         }) ?? throw new NotFoundException("Not found structure");
+
+        CoreStaticCache.Permissions.TryRemove(structureId, out _);
 
         return true;
     }

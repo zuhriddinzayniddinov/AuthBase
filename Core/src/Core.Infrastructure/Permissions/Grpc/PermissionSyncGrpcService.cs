@@ -58,4 +58,51 @@ public class PermissionSyncGrpcService : IPermissionSyncGrpcService
             };
         }
     }
+
+    /// <inheritdoc />
+    public async Task<GetServiceStructurePermissionsResponse> GetServiceStructurePermissionsAsync(
+        GetServiceStructurePermissionsRequest request,
+        CallContext context = default)
+    {
+        _logger.LogInformation(
+            "gRPC orqali mikroservis o'zining struktura ruxsatlarini so'radi. Servis: {ServiceName}, Kod: {ServiceCode}, Filter kodlar: {Count}",
+            request.ServiceName,
+            request.ServiceCode,
+            request.PermissionCodes?.Count ?? 0);
+
+        try
+        {
+            var dict = await _storageHandler.GetStructurePermissionsForServiceAsync(
+                request.ServiceName,
+                request.ServiceCode,
+                request.PermissionCodes,
+                context.CancellationToken);
+
+            var items = dict
+                .Where(kv => kv.Value.Count > 0)
+                .Select(kv => new StructurePermissionItem
+                {
+                    StructureId = kv.Key,
+                    PermissionCodes = kv.Value
+                })
+                .ToList();
+
+            return new GetServiceStructurePermissionsResponse
+            {
+                Success = true,
+                Items = items,
+                Message = $"{items.Count} ta struktura uchun ruxsatlar muvaffaqiyatli qaytarildi."
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{ServiceName} servisining struktura ruxsatlarini gRPC orqali olishda xatolik", request.ServiceName);
+            return new GetServiceStructurePermissionsResponse
+            {
+                Success = false,
+                Items = [],
+                Message = $"Xatolik: {ex.Message}"
+            };
+        }
+    }
 }

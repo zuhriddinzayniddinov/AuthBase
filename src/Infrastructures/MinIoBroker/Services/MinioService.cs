@@ -14,12 +14,29 @@ public class MinioService(IOptions<MinIoConfiguration> configuration) : IMinioSe
         .WithCredentials(configuration.Value.AccessKey, configuration.Value.SecretKey)
         .WithSSL(configuration.Value.UseSSL)
         .Build();
+
+    private volatile bool _bucketChecked;
+    private readonly SemaphoreSlim _bucketLock = new(1, 1);
     
     public async Task EnsureBucketExistsAsync()
     {
-        var exists = await client.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
-        if (!exists)
-            await client.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
+        if (_bucketChecked) return;
+
+        await _bucketLock.WaitAsync();
+        try
+        {
+            if (_bucketChecked) return;
+
+            var exists = await client.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
+            if (!exists)
+                await client.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
+
+            _bucketChecked = true;
+        }
+        finally
+        {
+            _bucketLock.Release();
+        }
     }
     public async Task UploadFileAsync(string objectName, string filePath)
     {
@@ -69,7 +86,9 @@ public class MinioService(IOptions<MinIoConfiguration> configuration) : IMinioSe
     }
     public async Task<string> GetPresignedUrlAsync(string objectName, int expirySeconds = 3600)
     {
-        await EnsureBucketExistsAsync();
+        if (string.IsNullOrWhiteSpace(objectName))
+            return string.Empty;
+
         var url = await client.PresignedGetObjectAsync(new PresignedGetObjectArgs()
             .WithBucket(bucketName)
             .WithObject(objectName)

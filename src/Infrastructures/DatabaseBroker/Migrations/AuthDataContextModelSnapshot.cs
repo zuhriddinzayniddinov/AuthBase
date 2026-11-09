@@ -35,14 +35,26 @@ namespace DatabaseBroker.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("code");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
                     b.Property<bool>("IsDelete")
                         .HasColumnType("boolean")
                         .HasColumnName("is_delete");
+
+                    b.Property<string>("ModuleName")
+                        .HasColumnType("text")
+                        .HasColumnName("module_name");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
+
+                    b.Property<string>("ServiceName")
+                        .HasColumnType("text")
+                        .HasColumnName("service_name");
 
                     b.Property<uint>("xmin")
                         .IsConcurrencyToken()

@@ -1,13 +1,49 @@
-## Visual Studio / Rider / VS Code cache and build artifacts
+## Build results
 [Bb]in/
 [Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+[Aa]rtifacts/
+TestResults/
+**/TestResults/
+
+## Visual Studio / Rider / VS Code cache & settings
 .idea/
+**/.idea/
 .vscode/
-*.user
+**/.vscode/
+*.DotSettings*
 *.suo
+*.user
 *.userosscache
 *.sln.docstates
+*.userprefs
+*.launchSettings.json
 
-## OS files
+## Logs & Temp files
+Logs/
+**/Logs/
+*.log
+*.tmp
+*.temp
+
+## Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+## Docker local volumes & persistence
+postgres-data/
+minio-data/
+
+## OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db

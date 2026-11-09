@@ -1,13 +1,16 @@
 using System.IdentityModel.Tokens.Jwt;
+using Core.Domain.Constants;
 using Core.Domain.Enums;
 using Core.Domain.Exceptions;
 using Core.Domain.Helpers;
 using Core.Infrastructure.Security;
 using Core.Web.Constants;
+using DatabaseBroker.DataContext;
 using DatabaseBroker.Repositories.Auth;
 using Entity.DataTransferObjects.Authentication;
 using Entity.Models.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace AuthService.Services;
 
@@ -16,7 +19,9 @@ public class AuthService(
     IUserRepository userRepository,
     ITokenRepository tokenRepository,
     ISignMethodsRepository signMethodsRepository,
-    IStructureRepository structureRepository)
+    IStructureRepository structureRepository,
+    AuthDataContext authDataContext,
+    IDistributedCache distributedCache)
     : IAuthService
 {
     public async Task<bool> RegisterAsync(UserRegisterDto userRegisterDto)
@@ -47,16 +52,27 @@ public class AuthService(
                 : new List<UserStructure>()
         };
 
-        var storedUser = await userRepository.AddAsync(newUser);
-        var salt = Guid.NewGuid().ToString();
-        await signMethodsRepository.AddAsync(new DefaultSignMethod
+        await using var transaction = await authDataContext.Database.BeginTransactionAsync();
+        try
         {
-            Username = userRegisterDto.UserName,
-            Salt = salt,
-            PasswordHash = PasswordHelper.Encrypt(userRegisterDto.Password, salt),
-            UserId = storedUser.Id
-        });
-        return true;
+            var storedUser = await userRepository.AddAsync(newUser);
+            var salt = Guid.NewGuid().ToString();
+            await signMethodsRepository.AddAsync(new DefaultSignMethod
+            {
+                Username = userRegisterDto.UserName,
+                Salt = salt,
+                PasswordHash = PasswordHelper.Encrypt(userRegisterDto.Password, salt),
+                UserId = storedUser.Id
+            });
+
+            await transaction.CommitAsync();
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<TokenDto> SignByPasswordAsync(AuthenticationDto authenticationDto)
@@ -146,7 +162,22 @@ public class AuthService(
 
         var deleteToken = await tokenRepository.RemoveAsync(token);
 
-        return deleteToken != null && deleteToken.Id == token.Id;
+        if (deleteToken != null && deleteToken.Id == token.Id)
+        {
+            var redisKey = string.Format(AppCacheKeys.SessionRevokedL2Format, token.UserId, token.AccessTokenId);
+            var remainingTtl = token.ExpireToken > DateTime.UtcNow
+                ? token.ExpireToken - DateTime.UtcNow
+                : TimeSpan.FromMinutes(15);
+
+            await distributedCache.SetStringAsync(redisKey, "revoked", new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = remainingTtl
+            });
+
+            return true;
+        }
+
+        return false;
     }
 
     public Task<List<int>> GetUserPermissionsAsync(long userId)
@@ -157,9 +188,9 @@ public class AuthService(
                 u.Structures
                     .SelectMany(s =>
                         s.Structure.StructurePermissions
-                            .Select(sp => sp.Permission.Code))
-                    .Distinct()
-                    .ToList())
+                            .Where(sp => !sp.IsDelete && !sp.Permission.IsDelete)
+                            .Select(sp => sp.Permission.Code)))
+            .Distinct()
             .ToListAsync();
     }
 }

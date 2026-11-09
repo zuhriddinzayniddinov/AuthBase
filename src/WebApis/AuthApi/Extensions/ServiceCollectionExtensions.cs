@@ -1,4 +1,7 @@
 using AuthService.Services;
+using Core.Infrastructure.Grpc.Extensions;
+using Core.Infrastructure.Permissions.Extensions;
+using Core.Web.Extensions;
 using DatabaseBroker.Repositories.Auth;
 using Entity.Models.Configurations;
 using MinIoBroker.Services;
@@ -20,6 +23,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService.Services.AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService.Service.RoleService>();
+
+        // Code-First gRPC Server & Permission Receiver
+        services.AddCoreGrpcServer();
+        services.AddCorePermissionReceiver<AuthPermissionStorageHandler>();
+
+        // High-performance compression & rate limiting
+        services.AddCoreCompression();
+        services.AddCoreRateLimiting();
 
         return services;
     }
