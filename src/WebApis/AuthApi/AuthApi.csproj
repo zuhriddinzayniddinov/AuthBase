@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <LangVersion>12</LangVersion>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\..\Domain\Entity\Entity.csproj" />
+      <ProjectReference Include="..\..\Domain\WebCore\WebCore.csproj" />
+      <ProjectReference Include="..\..\Infrastructures\CacheBroker\CacheBroker.csproj" />
+      <ProjectReference Include="..\..\Services\AuthService\AuthService.csproj" />
+      <ProjectReference Include="..\..\Services\StructureService\RoleService.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.22">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+
+</Project>

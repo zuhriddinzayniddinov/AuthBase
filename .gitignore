@@ -1,0 +1,13 @@
+## Visual Studio / Rider / VS Code cache and build artifacts
+[Bb]in/
+[Oo]bj/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## OS files
+.DS_Store
+Thumbs.db
