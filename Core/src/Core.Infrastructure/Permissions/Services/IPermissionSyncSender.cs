@@ -50,11 +50,4 @@ public interface IPermissionSyncSender
     /// </summary>
     /// <param name="cancellationToken">Bekor qilish tokeni.</param>
     Task SyncDirectAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Mikroservis uchun AuthApi dan faqat o'ziga tegishli strukturalar (rollar) va ruxsat kodlarini
-    /// gRPC (yoki Direct) orqali oladi va xotiradagi <c>StaticCache.Permissions</c> ga yuklaydi.
-    /// </summary>
-    /// <param name="cancellationToken">Bekor qilish tokeni.</param>
-    Task FetchAndLoadStructurePermissionsAsync(CancellationToken cancellationToken = default);
 }

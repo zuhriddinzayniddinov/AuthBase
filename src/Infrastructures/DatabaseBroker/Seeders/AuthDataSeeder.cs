@@ -1,4 +1,4 @@
-using Core.Domain.Permissions;
+using Core.Web.Constants;
 using DatabaseBroker.DataContext;
 using Entity.Enums;
 using Entity.Models.Auth;
@@ -24,7 +24,7 @@ public static class AuthDataSeeder
 
     /// <summary>
     /// Ma'lumotlar bazasida standart rollar va ruxsatlarni tekshiradi va yo'qlarini yaratadi.
-    /// Shuningdek, xotiradagi <see cref="CoreStaticCache.Permissions"/> ni to'ldiradi.
+    /// Shuningdek, xotiradagi <see cref="StaticCache.Permissions"/> ni to'ldiradi.
     /// </summary>
     public static async Task SeedAuthDataAsync(this IServiceProvider serviceProvider)
     {
@@ -182,14 +182,14 @@ public static class AuthDataSeeder
             })
             .ToListAsync();
 
-        CoreStaticCache.Permissions.Clear();
+        StaticCache.Permissions.Clear();
         foreach (var item in structurePermissions)
         {
-            CoreStaticCache.Permissions[item.StructureId] = item.Codes;
+            StaticCache.Permissions[item.StructureId] = item.Codes;
         }
 
         logger?.LogInformation(
-            "CoreStaticCache.Permissions muvaffaqiyatli yangilandi. Jami {Count} ta struktura keshlandi.",
+            "StaticCache.Permissions muvaffaqiyatli yangilandi. Jami {Count} ta struktura keshlandi.",
             structurePermissions.Count);
     }
 }

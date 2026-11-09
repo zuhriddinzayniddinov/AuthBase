@@ -1,5 +1,6 @@
 using Core.Domain.Permissions;
 using Core.Infrastructure.Permissions;
+using Core.Web.Constants;
 using DatabaseBroker.DataContext;
 using Entity.Models.Auth;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace AuthService.Services;
 
 /// <summary>
-/// AuthApi ma'lumotlar bazasida ruxsatlarni saqlash va boshqa mikroservislarga
-/// faqat o'zlariga tegishli struktura va ruxsat kodlarini berish uchun xizmat.
+/// AuthApi ma'lumotlar bazasida boshqa mikroservislardan kelgan ruxsatlarni
+/// saqlash va yangilash (Upsert) xizmati.
 /// </summary>
 public class AuthPermissionStorageHandler : IPermissionStorageHandler
 {
@@ -91,71 +92,16 @@ public class AuthPermissionStorageHandler : IPermissionStorageHandler
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // Shuningdek xotiradagi keshni yangilaymiz
-            if (CoreStaticCache.Permissions.TryGetValue(superAdmin.Id, out var existingCodes))
+            if (StaticCache.Permissions.TryGetValue(superAdmin.Id, out var existingCodes))
             {
                 existingCodes.AddRange(newPermissions.Select(p => p.Code));
             }
             else
             {
-                CoreStaticCache.Permissions[superAdmin.Id] = newPermissions.Select(p => p.Code).ToList();
+                StaticCache.Permissions[superAdmin.Id] = newPermissions.Select(p => p.Code).ToList();
             }
         }
 
         return processed;
-    }
-
-    /// <inheritdoc />
-    public async Task<Dictionary<long, List<int>>> GetStructurePermissionsForServiceAsync(
-        string? serviceName,
-        int? serviceCode,
-        IReadOnlyList<int>? permissionCodes,
-        CancellationToken cancellationToken = default)
-    {
-        IQueryable<Permission> query = _dbContext.Permissions.AsNoTracking();
-
-        if (permissionCodes != null && permissionCodes.Count > 0)
-        {
-            query = query.Where(p => permissionCodes.Contains(p.Code));
-        }
-        else if (serviceCode.HasValue)
-        {
-            var minCode = serviceCode.Value * 1000000;
-            var maxCode = (serviceCode.Value + 1) * 1000000;
-            query = query.Where(p => (p.Code >= minCode && p.Code < maxCode) || p.ServiceName == serviceName);
-        }
-        else if (!string.IsNullOrEmpty(serviceName))
-        {
-            query = query.Where(p => p.ServiceName == serviceName);
-        }
-
-        var matchedPermissions = await query.Select(p => new { p.Id, p.Code }).ToListAsync(cancellationToken);
-        if (matchedPermissions.Count == 0)
-            return [];
-
-        var matchedPermissionIds = matchedPermissions.Select(p => p.Id).ToList();
-        var permissionIdToCode = matchedPermissions.ToDictionary(p => p.Id, p => p.Code);
-
-        var structurePermissions = await _dbContext.StructurePermissions
-            .AsNoTracking()
-            .Where(sp => matchedPermissionIds.Contains(sp.PermissionId))
-            .Select(sp => new { sp.StructureId, sp.PermissionId })
-            .ToListAsync(cancellationToken);
-
-        var result = new Dictionary<long, List<int>>();
-        foreach (var sp in structurePermissions)
-        {
-            if (!result.TryGetValue(sp.StructureId, out var codes))
-            {
-                codes = [];
-                result[sp.StructureId] = codes;
-            }
-
-            if (permissionIdToCode.TryGetValue(sp.PermissionId, out var code) && !codes.Contains(code))
-            {
-                codes.Add(code);
-            }
-        }
-
-        return result;
     }
 }

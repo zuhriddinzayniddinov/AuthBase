@@ -1,7 +1,9 @@
 using AuthService.Services;
 using Core.Domain.Permissions;
+using Core.Web.Constants;
 using DatabaseBroker.DataContext;
 using DatabaseBroker.Seeders;
+using Entity.Contracts.StructurePermissions;
 using Entity.Models.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -55,9 +57,9 @@ public class AuthPermissionStorageHandlerTests
     }
 
     [Fact]
-    public async Task GetStructurePermissionsForServiceAsync_ReturnsOnlyTargetServicePermissions_ExcludesForeignData()
+    public async Task StructurePermissionGrpcService_ReturnsOnlyTargetServicePermissions_ExcludesForeignData()
     {
-        using var context = CreateInMemoryContext(nameof(GetStructurePermissionsForServiceAsync_ReturnsOnlyTargetServicePermissions_ExcludesForeignData));
+        using var context = CreateInMemoryContext(nameof(StructurePermissionGrpcService_ReturnsOnlyTargetServicePermissions_ExcludesForeignData));
 
         // Create 3 structures
         var defaultUserRole = new Structure { Id = 1, Name = "User", Type = 1 };
@@ -86,31 +88,39 @@ public class AuthPermissionStorageHandlerTests
         );
         await context.SaveChangesAsync();
 
-        var handler = new AuthPermissionStorageHandler(context, NullLogger<AuthPermissionStorageHandler>.Instance);
+        var service = new StructurePermissionGrpcService(context, NullLogger<StructurePermissionGrpcService>.Instance);
 
-        // Act: QuranCourse microservice queries its permissions
-        var result = await handler.GetStructurePermissionsForServiceAsync("QuranCourse", 60, [60100001, 60100002]);
+        // Act: QuranCourse microservice queries its permissions via gRPC
+        var response = await service.GetServiceStructurePermissionsAsync(new GetServiceStructurePermissionsRequest
+        {
+            ServiceName = "QuranCourse",
+            ServiceCode = 60,
+            PermissionCodes = [60100001, 60100002]
+        });
 
         // Assert:
+        Assert.True(response.Success);
+        var itemsMap = response.Items.ToDictionary(i => i.StructureId, i => i.PermissionCodes);
+
         // 1. Structure 3 (HR) MUST NOT be present because it has 0 QuranCourse permissions
-        Assert.False(result.ContainsKey(3));
+        Assert.False(itemsMap.ContainsKey(3));
 
         // 2. Structure 1 (User) has only [60100001]
-        Assert.True(result.ContainsKey(1));
-        Assert.Equal([60100001], result[1]);
+        Assert.True(itemsMap.ContainsKey(1));
+        Assert.Equal([60100001], itemsMap[1]);
 
         // 3. Structure 2 (SuperAdmin) has [60100001, 60100002] but NOT 70100001 (foreign)
-        Assert.True(result.ContainsKey(2));
-        Assert.Contains(60100001, result[2]);
-        Assert.Contains(60100002, result[2]);
-        Assert.DoesNotContain(70100001, result[2]);
-        Assert.Equal(2, result[2].Count);
+        Assert.True(itemsMap.ContainsKey(2));
+        Assert.Contains(60100001, itemsMap[2]);
+        Assert.Contains(60100002, itemsMap[2]);
+        Assert.DoesNotContain(70100001, itemsMap[2]);
+        Assert.Equal(2, itemsMap[2].Count);
     }
 
     [Fact]
-    public async Task ReloadPermissionsCacheAsync_PopulatesCoreStaticCache()
+    public async Task ReloadPermissionsCacheAsync_PopulatesStaticCache()
     {
-        using var context = CreateInMemoryContext(nameof(ReloadPermissionsCacheAsync_PopulatesCoreStaticCache));
+        using var context = CreateInMemoryContext(nameof(ReloadPermissionsCacheAsync_PopulatesStaticCache));
 
         var s1 = new Structure { Id = 100, Name = "RoleA", Type = 1 };
         var p1 = new Permission { Id = 200, Code = 10100001, Name = "P1" };
@@ -119,12 +129,11 @@ public class AuthPermissionStorageHandlerTests
         await context.StructurePermissions.AddAsync(new StructurePermission { StructureId = 100, PermissionId = 200 });
         await context.SaveChangesAsync();
 
-        CoreStaticCache.Permissions.Clear();
+        StaticCache.Permissions.Clear();
 
         await AuthDataSeeder.ReloadPermissionsCacheAsync(context);
 
-        Assert.True(CoreStaticCache.Permissions.ContainsKey(100));
-        Assert.Equal([10100001], CoreStaticCache.Permissions[100]);
-        Assert.Equal([10100001], Core.Web.Constants.StaticCache.Permissions[100]);
+        Assert.True(StaticCache.Permissions.ContainsKey(100));
+        Assert.Equal([10100001], StaticCache.Permissions[100]);
     }
 }

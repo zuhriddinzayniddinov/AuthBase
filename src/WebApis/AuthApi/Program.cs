@@ -1,4 +1,5 @@
 using AuthApi.Extensions;
+using AuthService.Services;
 using Core.Infrastructure.Permissions.Grpc;
 using Core.Web.Extensions;
 using DatabaseBroker.DataContext;
@@ -22,6 +23,7 @@ app.UseRateLimiter();
 await app.ConfigureDefault();
 
 app.MapGrpcService<PermissionSyncGrpcService>();
+app.MapGrpcService<StructurePermissionGrpcService>();
 app.MapControllers();
 
 app.Run();

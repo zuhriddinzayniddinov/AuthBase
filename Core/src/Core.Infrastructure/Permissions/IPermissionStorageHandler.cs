@@ -23,19 +23,4 @@ public interface IPermissionStorageHandler
         int? serviceCode,
         IReadOnlyList<PermissionDefinition> permissions,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Mikroservis uchun faqat unga tegishli strukturalar va ruxsat kodlari lug'atini (StructureId -> PermissionCodes) qaytaradi.
-    /// Begona yoki boshqa servislarga tegishli ruxsatlar filtrlanadi va berilmaydi.
-    /// </summary>
-    /// <param name="serviceName">Mikroservis nomi.</param>
-    /// <param name="serviceCode">Mikroservis prefiks kodi.</param>
-    /// <param name="permissionCodes">Mikroservis ruxsat kodlari ro'yxati (ixtiyoriy filter).</param>
-    /// <param name="cancellationToken">Bekor qilish tokeni.</param>
-    /// <returns>Struktura ID si va unga tegishli ushbu servisning ruxsat kodlari lug'ati.</returns>
-    Task<Dictionary<long, List<int>>> GetStructurePermissionsForServiceAsync(
-        string? serviceName,
-        int? serviceCode,
-        IReadOnlyList<int>? permissionCodes,
-        CancellationToken cancellationToken = default);
 }

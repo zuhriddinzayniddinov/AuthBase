@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
         // Code-First gRPC Server & Permission Receiver
         services.AddCoreGrpcServer();
         services.AddCorePermissionReceiver<AuthPermissionStorageHandler>();
+        services.AddScoped<StructurePermissionGrpcService>();
 
         // High-performance compression & rate limiting
         services.AddCoreCompression();

@@ -58,12 +58,12 @@ Foydalanuvchilar autentifikatsiyasi (Authentication), ruxsatlarini boshqarish (R
 
 ### Mikroservisda qo'llash (Atigi 2 qadam):
 
-1. **`Program.cs` da gRPC mijoz va avto-sinxronizatsiyani yoqish:**
+1. **`Program.cs` da gRPC mijozni ulash va avto-sinxronizatsiya:**
 ```csharp
 // 1. AuthApi gRPC manzilini ko'rsatish
-builder.Services.AddCoreGrpcClient<IPermissionSyncGrpcService>("http://auth-api:50051");
+builder.Services.AddCoreGrpcClient<IStructurePermissionGrpcService>("http://auth-api:50051");
 
-// 2. Mikroservis enum ruxsatlarini ro'yxatdan o'tkazish (gRPC rejimi)
+// 2. Mikroservis enum ruxsatlarini ro'yxatdan o'tkazish (Core orqali)
 builder.Services.AddCorePermissionAutoSync<OrderPermissions>(PermissionSyncMode.Grpc);
 ```
 
@@ -89,7 +89,7 @@ public class OrdersController : ControllerBase
 
 1. **RBAC Kesh Ishonchliligi (`StaticCache.Permissions`):**
    - Startup paytida `AuthDataSeeder.ReloadPermissionsCacheAsync` chaqirilib, barcha rollar va ruxsatlar xotiraga yuklanadi.
-   - `RoleService` da rol yaratilganda, tahrirlanganda yoki o'chirilganda `CoreStaticCache.Permissions` darhol sinxron yangilanadi.
+   - `RoleService` da rol yaratilganda, tahrirlanganda yoki o'chirilganda `StaticCache.Permissions` darhol sinxron yangilanadi.
 2. **`UserService` va `MinioService` Unumdorligi (10x tezlashuv):**
    - Foydalanuvchilar ro'yxatini olishda har bir element uchun `.Result` orqali MinIO ga sinxron so'rov yuborish (sync-over-async deadlock xavfi) to'liq olib tashlandi.
    - Asinxron `Task.WhenAll` joriy etildi va `AvatarUrl` bo'sh bo'lgan holatlarda MinIO ga ortiqcha so'rov yuborilmaydi.

@@ -11,6 +11,7 @@
         <ProjectReference Include="..\..\Domain\Entity\Entity.csproj" />
         <ProjectReference Include="..\..\..\Core\src\Core.Infrastructure\Core.Infrastructure.csproj" />
         <ProjectReference Include="..\..\..\Core\src\Core.Domain\Core.Domain.csproj" />
+        <ProjectReference Include="..\..\..\Core\src\Core.Web\Core.Web.csproj" />
     </ItemGroup>
 
     <ItemGroup>

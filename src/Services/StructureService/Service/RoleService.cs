@@ -1,7 +1,7 @@
 using Core.Domain.Exceptions;
 using Core.Domain.Models.Api;
-using Core.Domain.Permissions;
 using Core.Infrastructure.Data.Extensions;
+using Core.Web.Constants;
 using DatabaseBroker.Repositories.Auth;
 using Entity.DataTransferObjects.Role;
 using Entity.Models.Auth;
@@ -33,7 +33,7 @@ public class RoleService(
             .Select(p => p.Code)
             .ToListAsync();
 
-        CoreStaticCache.Permissions[structureModel.Id] = permCodes;
+        StaticCache.Permissions[structureModel.Id] = permCodes;
 
         return new StructureDto(
             structureModel.Id,
@@ -78,7 +78,7 @@ public class RoleService(
             .Select(p => p.Code)
             .ToListAsync();
 
-        CoreStaticCache.Permissions[changedStructure.Id] = activePermCodes;
+        StaticCache.Permissions[changedStructure.Id] = activePermCodes;
 
         return new StructureDto(
             changedStructure.Id,
@@ -92,7 +92,7 @@ public class RoleService(
             Id = structureId
         }) ?? throw new NotFoundException("Not found structure");
 
-        CoreStaticCache.Permissions.TryRemove(structureId, out _);
+        StaticCache.Permissions.TryRemove(structureId, out _);
 
         return true;
     }

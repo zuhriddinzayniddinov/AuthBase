@@ -40,8 +40,7 @@ public class PermissionAutoSyncHostedService : BackgroundService
             {
                 _logger.LogInformation("Lokal ruxsatlarni to'g'ridan-to'g'ri bazaga saqlash boshlandi (Direct Mode)...");
                 await _sender.SyncDirectAsync(stoppingToken);
-                await _sender.FetchAndLoadStructurePermissionsAsync(stoppingToken);
-                _logger.LogInformation("Lokal ruxsatlarni bazaga saqlash va yuklash muvaffaqiyatli yakunlandi.");
+                _logger.LogInformation("Lokal ruxsatlarni bazaga saqlash muvaffaqiyatli yakunlandi.");
                 return;
             }
 
@@ -59,10 +58,6 @@ public class PermissionAutoSyncHostedService : BackgroundService
                 _logger.LogInformation("Avtomatik ruxsatlar sinxronizatsiyasi boshlandi (gRPC)...");
                 await _sender.SyncViaGrpcAsync(stoppingToken);
             }
-
-            // Servisga tegishli struktura ruxsatlarini AuthApi dan olib StaticCache ga yuklaymiz
-            _logger.LogInformation("AuthApi dan servisga tegishli struktura ruxsatlarini yuklash boshlandi...");
-            await _sender.FetchAndLoadStructurePermissionsAsync(stoppingToken);
 
             _logger.LogInformation("Avtomatik ruxsatlar sinxronizatsiyasi yakunlandi.");
         }

@@ -10,5 +10,10 @@
     <ItemGroup>
         <ProjectReference Include="..\..\..\Core\src\Core.Domain\Core.Domain.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="protobuf-net.Grpc" Version="1.3.14" />
+        <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" />
+    </ItemGroup>
     
 </Project>

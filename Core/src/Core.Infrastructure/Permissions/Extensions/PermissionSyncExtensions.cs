@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ProtoBuf.Grpc.ClientFactory;
 
 namespace Core.Infrastructure.Permissions.Extensions;
 
@@ -149,24 +148,5 @@ public static class PermissionSyncExtensions
     public static void AddPermissionSyncConsumer(this IBusRegistrationConfigurator bus)
     {
         bus.AddConsumer<PermissionSyncRabbitMqConsumer>();
-    }
-
-    /// <summary>
-    /// Mikroservisda AuthApi gRPC mijozi orqali IPermissionSyncGrpcService ni ro'yxatdan o'tkazadi.
-    /// Ushbu mijoz yordamida servis start vaqtida ruxsatlarni sinxronlashtiradi va o'ziga tegishli
-    /// struktura ruxsatlarini qabul qilib oladi.
-    /// </summary>
-    /// <param name="services">DI servislar to'plami.</param>
-    /// <param name="authApiGrpcAddress">AuthApi gRPC manzili (masalan: "http://localhost:50051" yoki "http://auth-api:50051").</param>
-    public static IServiceCollection AddCorePermissionSyncGrpcClient(
-        this IServiceCollection services,
-        string authApiGrpcAddress)
-    {
-        services.AddCodeFirstGrpcClient<IPermissionSyncGrpcService>(o =>
-        {
-            o.Address = new Uri(authApiGrpcAddress);
-        });
-
-        return services;
     }
 }

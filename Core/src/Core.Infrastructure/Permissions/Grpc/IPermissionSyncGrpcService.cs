@@ -18,14 +18,4 @@ public interface IPermissionSyncGrpcService
     /// <returns>Ro'yxatdan o'tganlik holati haqida javob.</returns>
     [OperationContract]
     Task<SyncPermissionsResponse> SyncPermissionsAsync(SyncPermissionsRequest request, CallContext context = default);
-
-    /// <summary>
-    /// Mikroservis ishga tushganda faqat o'ziga tegishli strukturalar (rollar) va ruxsat kodlarini
-    /// AuthApi dan olish metodi. Begona servislar ruxsatlari qaytarilmaydi.
-    /// </summary>
-    /// <param name="request">Servis nomi, kodi yoki ruxsat kodlari filtri.</param>
-    /// <param name="context">gRPC chaqiruv konteksti.</param>
-    /// <returns>Struktura ID lari va ularga tegishli ruxsat kodlari xaritasi.</returns>
-    [OperationContract]
-    Task<GetServiceStructurePermissionsResponse> GetServiceStructurePermissionsAsync(GetServiceStructurePermissionsRequest request, CallContext context = default);
 }
