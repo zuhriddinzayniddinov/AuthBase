@@ -1,5 +1,3 @@
-using Entity.Models;
-
 namespace Entity.DataTransferObjects.Authentication;
 
 public record TokenDto(

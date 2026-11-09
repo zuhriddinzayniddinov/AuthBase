@@ -1,8 +1,8 @@
-﻿using DatabaseBroker.DataContext;
-using Entity.Models;
+﻿using Core.Infrastructure.Data.Repositories;
+using DatabaseBroker.DataContext;
 using Entity.Models.Auth;
 
 namespace DatabaseBroker.Repositories.Auth;
 
-public class TokenRepository(IhdaDataContext dbContext)
+public class TokenRepository(AuthDataContext dbContext)
     : RepositoryBase<TokenModel, long>(dbContext), ITokenRepository;

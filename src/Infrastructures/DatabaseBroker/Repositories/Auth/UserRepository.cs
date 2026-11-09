@@ -1,7 +1,8 @@
-﻿using DatabaseBroker.DataContext;
-using Entity.Models;
+﻿using Core.Infrastructure.Data.Repositories;
+using DatabaseBroker.DataContext;
 using Entity.Models.Auth;
 
 namespace DatabaseBroker.Repositories.Auth;
 
-public class UserRepository(IhdaDataContext dbContext) : RepositoryBase<User, long>(dbContext), IUserRepository;
+public class UserRepository(AuthDataContext dbContext)
+    : RepositoryBase<User, long>(dbContext), IUserRepository;

@@ -5,18 +5,18 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["WebApis/AuthApi/AuthApi.csproj", "WebApis/AuthApi/"]
-COPY ["Domain/Entity/Entity.csproj", "Domain/Entity/"]
-COPY ["Domain/WebCore/WebCore.csproj", "Domain/WebCore/"]
-COPY ["Infrastructures/AuthenticationBroker/AuthenticationBroker.csproj", "Infrastructures/AuthenticationBroker/"]
-COPY ["Infrastructures/CacheBroker/CacheBroker.csproj", "Infrastructures/CacheBroker/"]
-COPY ["Infrastructures/DatabaseBroker/DatabaseBroker.csproj", "Infrastructures/DatabaseBroker/"]
-COPY ["Infrastructures/MinIoBroker/MinIoBroker.csproj", "Infrastructures/MinIoBroker/"]
-COPY ["Services/StructureService/RoleService.csproj", "Services/StructureService/"]
-COPY ["Services/AuthService/AuthService.csproj", "Services/AuthService/"]
-RUN dotnet restore "WebApis/AuthApi/AuthApi.csproj"
+COPY ["src/WebApis/AuthApi/AuthApi.csproj", "src/WebApis/AuthApi/"]
+COPY ["src/Domain/Entity/Entity.csproj", "src/Domain/Entity/"]
+COPY ["src/Infrastructures/DatabaseBroker/DatabaseBroker.csproj", "src/Infrastructures/DatabaseBroker/"]
+COPY ["src/Infrastructures/MinIoBroker/MinIoBroker.csproj", "src/Infrastructures/MinIoBroker/"]
+COPY ["src/Services/StructureService/RoleService.csproj", "src/Services/StructureService/"]
+COPY ["src/Services/AuthService/AuthService.csproj", "src/Services/AuthService/"]
+COPY ["Core/src/Core.Domain/Core.Domain.csproj", "Core/src/Core.Domain/"]
+COPY ["Core/src/Core.Infrastructure/Core.Infrastructure.csproj", "Core/src/Core.Infrastructure/"]
+COPY ["Core/src/Core.Web/Core.Web.csproj", "Core/src/Core.Web/"]
+RUN dotnet restore "src/WebApis/AuthApi/AuthApi.csproj"
 COPY . .
-WORKDIR "/src/WebApis/AuthApi"
+WORKDIR "/src/src/WebApis/AuthApi"
 RUN dotnet build "./AuthApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

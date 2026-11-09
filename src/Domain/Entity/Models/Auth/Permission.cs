@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using Entity.Models.Common;
+using Core.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace Entity.Models.Auth;

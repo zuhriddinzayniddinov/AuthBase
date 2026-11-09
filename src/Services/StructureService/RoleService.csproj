@@ -1,17 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>12</LangVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>12</LangVersion>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Domain\Entity\Entity.csproj" />
-    <ProjectReference Include="..\..\Domain\WebCore\WebCore.csproj" />
-    <ProjectReference Include="..\..\Infrastructures\DatabaseBroker\DatabaseBroker.csproj" />
-  </ItemGroup>
-
+    <ItemGroup>
+        <ProjectReference Include="..\..\Domain\Entity\Entity.csproj" />
+        <ProjectReference Include="..\..\Infrastructures\DatabaseBroker\DatabaseBroker.csproj" />
+        <ProjectReference Include="..\..\..\Core\src\Core.Domain\Core.Domain.csproj" />
+        <ProjectReference Include="..\..\..\Core\src\Core.Infrastructure\Core.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\..\Core\src\Core.Web\Core.Web.csproj" />
+    </ItemGroup>
 
 </Project>

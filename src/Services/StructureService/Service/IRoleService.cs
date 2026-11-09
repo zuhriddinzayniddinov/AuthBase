@@ -1,6 +1,5 @@
+using Core.Domain.Models.Api;
 using Entity.DataTransferObjects.Role;
-using Entity.Models.ApiModels;
-using Entity.Models.Auth;
 
 namespace RoleService.Service;
 

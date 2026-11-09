@@ -1,6 +1,6 @@
+using Core.Domain.Models.Api;
 using Entity.DataTransferObjects.Authentication;
 using Entity.DataTransferObjects.Users;
-using Entity.Models.ApiModels;
 
 namespace AuthService.Services;
 

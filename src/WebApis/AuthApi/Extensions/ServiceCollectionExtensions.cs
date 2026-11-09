@@ -1,25 +1,22 @@
-using AuthApi.CronJobs;
-using AuthenticationBroker.TokenHandler;
 using AuthService.Services;
-using CacheBroker.Interfaces;
-using CacheBroker.MemoryCache;
 using DatabaseBroker.Repositories.Auth;
+using Entity.Models.Configurations;
+using MinIoBroker.Services;
 using RoleService.Service;
-using WebCore.Extensions;
 
 namespace AuthApi.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddConfig(this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddConfig(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<MinIoConfiguration>(configuration.GetSection("Minio"));
         return services;
     }
+
     public static IServiceCollection AddService(this IServiceCollection services)
     {
-        //services.AddCronJob<TemplateCroneJob>("* * * * *");
-        services.AddScoped<HttpClient, HttpClient>();
+        services.AddScoped<HttpClient>();
         services.AddScoped<IAuthService, AuthService.Services.AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService.Service.RoleService>();
@@ -34,8 +31,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IStructurePermissionRepository, StructurePermissionRepository>();
         services.AddScoped<ITokenRepository, TokenRepository>();
-        services.AddScoped<IJwtTokenHandler, JwtTokenHandler>();
         services.AddScoped<ISignMethodsRepository, SignMethodsRepository>();
+        services.AddScoped<IMinioService, MinioService>();
 
         return services;
     }

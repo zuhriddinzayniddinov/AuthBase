@@ -1,6 +1,6 @@
 using AuthService.Services;
+using Core.Web.CronSchedulers;
 using Serilog;
-using WebCore.CronSchedulers;
 
 namespace AuthApi.CronJobs;
 
@@ -11,7 +11,6 @@ public class TemplateCroneJob(IServiceProvider serviceProvider) : ICronJob
         Log.Information("Start template cron");
         using var scope = serviceProvider.CreateScope();
         var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        /*authService.Register(null);*/
         Log.Information("Finish template cron");
         return Task.CompletedTask;
     }

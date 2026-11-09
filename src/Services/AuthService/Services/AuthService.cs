@@ -1,13 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
-using AuthenticationBroker.TokenHandler;
+using Core.Domain.Enums;
+using Core.Domain.Exceptions;
+using Core.Domain.Helpers;
+using Core.Infrastructure.Security;
+using Core.Web.Constants;
 using DatabaseBroker.Repositories.Auth;
 using Entity.DataTransferObjects.Authentication;
-using Entity.Enums;
-using Entity.Exceptions;
-using Entity.Helpers;
 using Entity.Models.Auth;
 using Microsoft.EntityFrameworkCore;
-using WebCore.Constants;
 
 namespace AuthService.Services;
 
@@ -26,25 +26,30 @@ public class AuthService(
         if (hasStoredUser)
             throw new AlreadyExistsException("User name or login already exists");
 
+        var defaultStructure = await structureRepository.FirstOrDefaultAsync(x => x.Type == 1);
+
         var newUser = new User
         {
             FullName = userRegisterDto.FullName,
             Gender = userRegisterDto.Gender,
             Pinfl = userRegisterDto.Pinfl,
-            BirthDate = userRegisterDto.BirthDate.ToDateTime(new TimeOnly(0,0,0)),
+            BirthDate = userRegisterDto.BirthDate.ToDateTime(new TimeOnly(0, 0, 0)),
             AvatarUrl = userRegisterDto.PhotoUrl,
             SignMethods = new List<SignMethod>(),
-            Structures = [
-                new UserStructure
+            Structures = defaultStructure != null
+                ? new List<UserStructure>
                 {
-                    Structure = await structureRepository.FirstOrDefaultAsync(x => x.Type == 1)
+                    new()
+                    {
+                        StructureId = defaultStructure.Id
+                    }
                 }
-            ],
+                : new List<UserStructure>()
         };
 
         var storedUser = await userRepository.AddAsync(newUser);
         var salt = Guid.NewGuid().ToString();
-        await signMethodsRepository.AddAsync(new DefaultSignMethod()
+        await signMethodsRepository.AddAsync(new DefaultSignMethod
         {
             Username = userRegisterDto.UserName,
             Salt = salt,
@@ -53,9 +58,12 @@ public class AuthService(
         });
         return true;
     }
+
     public async Task<TokenDto> SignByPasswordAsync(AuthenticationDto authenticationDto)
     {
         var signMethod = await signMethodsRepository.OfType<DefaultSignMethod>()
+            .Include(x => x.User)
+            .ThenInclude(u => u.Structures)
             .FirstOrDefaultAsync(x => x.Username == authenticationDto.UserName);
 
         if (signMethod is null)
@@ -67,7 +75,8 @@ public class AuthService(
         var user = signMethod.User;
 
         var refreshToken = jwtTokenHandler.GenerateRefreshToken();
-        var accessToken = jwtTokenHandler.GenerateAccessToken(user);
+        var structureIds = user.Structures?.Select(s => s.StructureId);
+        var accessToken = jwtTokenHandler.GenerateAccessToken(user.Id, structureIds);
 
         var token = new TokenModel
         {
@@ -83,31 +92,34 @@ public class AuthService(
 
         var tokenDto = new TokenDto(
             new JwtSecurityTokenHandler().WriteToken(accessToken.token),
-            EncryptionHelper.EncryptStringWithTime(token.RefreshToken, token.Id,StaticCache.SymmetricKey, token.ExpireRefreshToken),
+            EncryptionHelper.EncryptStringWithTime(token.RefreshToken, token.Id, StaticCache.SymmetricKey, token.ExpireRefreshToken),
             token.ExpireRefreshToken);
 
         return tokenDto;
     }
+
     public async Task<TokenDto> RefreshTokenAsync(TokenDto tokenDto)
     {
         var tokenModel = EncryptionHelper.DecryptStringWithTime(tokenDto.RefreshToken, StaticCache.SymmetricKey);
-        
-        if(tokenModel.Timestamp < DateTime.UtcNow)
+
+        if (tokenModel.Timestamp < DateTime.UtcNow)
             throw new AlreadyExistsException("Refresh token timed out");
-        
+
         var token = await tokenRepository
             .GetAllAsQueryable()
-            .FirstOrDefaultAsync(t => t.Id == tokenModel.Id
-                && t.RefreshToken == tokenModel.Token)
+            .FirstOrDefaultAsync(t => t.Id == tokenModel.Id && t.RefreshToken == tokenModel.Token)
             ?? throw new NotFoundException("Not Found Token");
 
         if (token.ExpireRefreshToken < DateTime.UtcNow)
             throw new AlreadyExistsException("Refresh token timed out");
 
-        token.User = await userRepository.GetByIdAsync(token.UserId)
+        token.User = await userRepository.GetAllAsQueryable()
+            .Include(u => u.Structures)
+            .FirstOrDefaultAsync(u => u.Id == token.UserId)
             ?? throw new NotFoundException("Not Found User");
-        
-        var accessToken = jwtTokenHandler.GenerateAccessToken(token.User);
+
+        var structureIds = token.User.Structures?.Select(s => s.StructureId);
+        var accessToken = jwtTokenHandler.GenerateAccessToken(token.User.Id, structureIds);
         var refreshToken = jwtTokenHandler.GenerateRefreshToken();
 
         token.AccessTokenId = accessToken.jti;
@@ -119,22 +131,24 @@ public class AuthService(
 
         var newTokenDto = new TokenDto(
             new JwtSecurityTokenHandler().WriteToken(accessToken.token),
-            EncryptionHelper.EncryptStringWithTime(token.RefreshToken, token.Id,StaticCache.SymmetricKey, token.ExpireRefreshToken),
+            EncryptionHelper.EncryptStringWithTime(token.RefreshToken, token.Id, StaticCache.SymmetricKey, token.ExpireRefreshToken),
             token.ExpireRefreshToken);
 
         return newTokenDto;
     }
+
     public async Task<bool> DeleteTokenAsync(string jti)
     {
         var token = await tokenRepository
-                        .GetAllAsQueryable()
-                        .FirstOrDefaultAsync(t => t.AccessTokenId == jti)
-                    ?? throw new NotFoundException("Not Found Token");
+            .GetAllAsQueryable()
+            .FirstOrDefaultAsync(t => t.AccessTokenId == jti)
+            ?? throw new NotFoundException("Not Found Token");
 
         var deleteToken = await tokenRepository.RemoveAsync(token);
 
-        return deleteToken.Id == token.Id;
+        return deleteToken != null && deleteToken.Id == token.Id;
     }
+
     public Task<List<int>> GetUserPermissionsAsync(long userId)
     {
         return userRepository.GetAllAsQueryable()

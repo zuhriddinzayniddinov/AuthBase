@@ -1,21 +1,21 @@
-using DatabaseBroker.Extensions;
-using DatabaseBroker.Repositories;
+using Core.Domain.Exceptions;
+using Core.Domain.Models.Api;
+using Core.Infrastructure.Data.Extensions;
+using Core.Infrastructure.Data.Repositories;
+using Core.Web.Extensions;
 using DatabaseBroker.Repositories.Auth;
 using Entity.DataTransferObjects.Authentication;
 using Entity.DataTransferObjects.Users;
-using Entity.Exceptions;
-using Entity.Models.ApiModels;
 using Entity.Models.Auth;
 using Microsoft.EntityFrameworkCore;
 using MinIoBroker.Services;
-using WebCore.Extensions;
 
 namespace AuthService.Services;
 
 public class UserService(
     IUserRepository userRepository,
     GenericRepository<UserStructure, long> userStructureRepository,
-    IMinioService minioService) :  IUserService
+    IMinioService minioService) : IUserService
 {
     public async Task<ResponseModel<List<UserDto>>> GetUsersAsync(MetaQueryModel metaQueryModel, long userId)
     {
@@ -33,9 +33,12 @@ public class UserService(
                 u.AvatarUrl,
                 u.Structures.Select(s => s.StructureId).ToList()))
             .ToListAsync();
-        
-        return ResponseModel<List<UserDto>>.ResultFromContent(items.Select(u => u with { AvatarUrl = minioService.GetPresignedUrlAsync(u.AvatarUrl).Result }).ToList(),total: await query.CountAsync());
+
+        return ResponseModel<List<UserDto>>.ResultFromContent(
+            items.Select(u => u with { AvatarUrl = minioService.GetPresignedUrlAsync(u.AvatarUrl).Result }).ToList(),
+            total: await query.CountAsync());
     }
+
     public async Task<ResponseModel<UserFullDto>> GetUserByIdAsync(long userId)
     {
         var user = await userRepository.GetByIdAsync(userId)
@@ -49,16 +52,16 @@ public class UserService(
                 user.Structures.Select(s => s.StructureId).ToList(),
                 user.Structures.Select(s => s.Structure.Name).ToList()));
     }
-    
+
     public async Task<ResponseModel<bool>> AddStructureAsync(ChangeUserStructureDto userStructure)
     {
-        if(await userStructureRepository.GetAllAsQueryable()
+        if (await userStructureRepository.GetAllAsQueryable()
             .Where(us => us.UserId == userStructure.UserId)
             .Where(us => us.StructureId == userStructure.StructureId)
             .AnyAsync())
             throw new AlreadyExistsException("Structure already exists");
 
-        await userStructureRepository.AddWithSaveChangesAsync(new UserStructure()
+        await userStructureRepository.AddWithSaveChangesAsync(new UserStructure
         {
             UserId = userStructure.UserId,
             StructureId = userStructure.StructureId,
@@ -66,12 +69,13 @@ public class UserService(
 
         return true;
     }
+
     public async Task<ResponseModel<bool>> RemoveStructureAsync(ChangeUserStructureDto userStructure)
     {
         var userStructureModel = await userStructureRepository.GetAllAsQueryable()
-               .Where(us => us.UserId == userStructure.UserId)
-               .Where(us => us.StructureId == userStructure.StructureId)
-               .FirstOrDefaultAsync() ?? throw new NotFoundException("Not found structure");
+            .Where(us => us.UserId == userStructure.UserId)
+            .Where(us => us.StructureId == userStructure.StructureId)
+            .FirstOrDefaultAsync() ?? throw new NotFoundException("Not found structure");
 
         await userStructureRepository.RemoveWithSaveChangesAsync(userStructureModel.Id);
 

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using Entity.Enums;
-using Entity.Models.Common;
+using Core.Domain.Common;
+using Core.Domain.Enums;
 
 namespace Entity.Models.Auth;
 
